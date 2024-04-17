@@ -1,0 +1,63 @@
+name: Endor Labs sidecar scans
+on:
+  push: 
+  workflow_dispatch:
+jobs:
+  fast-scans:
+    runs-on: ubuntu-latest
+    permissions: 
+      issues: write
+      pull-requests: write
+      security-events: write
+      contents: read
+      id-token: write
+      actions: read
+    env:
+      ENDORLABS_TOOL_PATH: "${{ env.GITHUB_WORKSPACE }}/.endorlabs-tools"
+      ENDOR_GITHUB_ACTION_TOKEN_ENABLE: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: deploy endorctl
+        id: endorctl-deploy
+        shell: bash
+        run: |
+          set -eo pipefail
+          curl https://api.endorlabs.com/download/latest/endorctl_linux_amd64 -o "${ENDORLABS_TOOL_PATH}/endorctl"
+          echo "$(curl -s https://api.endorlabs.com/sha/latest/endorctl_linux_amd64)  endorctl" | sha256sum -c && chmod +x "${ENDORLABS_TOOL_PATH}/endorctl"
+          echo ENDORCTL="${ENDORLABS_TOOL_PATH}/endorctl" >> "${GITHUB_ENV}"
+
+      - name: secrets check
+        id: secrets-scanner
+        shell: bash
+        run: |
+          >&2 echo '::group::Secrets scan'
+          if ("${ENDORCTL}" scan --secrets --path="${GITHUB_WORKSPACE}" -o json --sarif-file "${ENDORLABS_TOOL_PATH}/endorlabs-results-secrets.sarif" > "${ENDORLABS_TOOL_PATH}/endorlabs-results-secrets.json")
+          then
+            echo "success"
+          else
+            ENDORCTL_EXIT=$?
+            echo "failure with code $ENDORCTL_EXIT"
+          >&2 echo '::endgroup::'
+          if [[ $ENDORCTL_EXIT == 0 ]]; then
+            exit 0
+          elif [[ $ENDORCTL_EXIT -lt 128 ]]; then
+            echo "::error title=endor labs failed with code ${ENDORCTL_EXIT}::Failure during secrets scanning, not policy-related
+            echo "secrets_policies_violated=0"
+          else
+            echo "::warning title=secrets policy violated (code ${ENDORCTL_EXIT})::Policy violations found during secrets scanning!"
+            echo "secrets_policies_violated=1"
+          fi
+          echo "endorctl_exit_code=$ENDORCTL_EXIT" >> $GITHUB_OUTPUT
+          exit $ENDORCTL_EXIT
+
+      - name: upload secrets SARIF for policy
+        if: ${{ failure() && steps.secrets-scanner.outputs.secrets_policies_violated }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ env.ENDORLABS_TOOL_PATH }}/endorlabs-results-secrets.sarif
+          category: secrets
+        ## continue on error; not uploading SARIF shouldn't fail the task
+        continue-on-error: true
+
+          

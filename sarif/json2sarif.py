@@ -12,12 +12,18 @@ json_root = 'all_findings' if len(sys.argv) <=2 else sys.argv[2]
 
 try:
     say(f"loading {json_filename} using root location {json_root}")
-    with open(json_filename, 'rb') as json_file:
+    with open(json_filename, 'r') as json_file:
         json = jsonlib.load(json_file)
     json = json[json_root]
 except KeyError as e:
     say(f"ERROR could not find key {e} in '{json_filename}', aborting")
     sys.exit(2)
+except jsonlib.JSONDecodeError as e:
+    say(f"ERROR reading JSON")
+    with open(json_filename, 'r') as json_file:
+        for ln in range(0,3):
+            print(json_file.readline())
+    raise(e)
 except Exception as e:
     say(f"ERROR {e.__class__.__name__}: {e}, quitting")
     sys.exit(1)

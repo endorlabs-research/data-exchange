@@ -45,7 +45,9 @@ for finding in json:
     sarif_finding = {
         "ruleId": rule_id,
         "level": level if level in ['note','warning','error'] else 'none',
-        "message": finding['meta']['description'],
+        "message": {
+            "text": finding['meta']['description'],
+        },
         "locations": []
     }
     

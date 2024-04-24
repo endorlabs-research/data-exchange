@@ -12,12 +12,18 @@ json_root = 'all_findings' if len(sys.argv) <=2 else sys.argv[2]
 
 try:
     say(f"loading {json_filename} using root location {json_root}")
-    with open(json_filename, 'rb') as json_file:
+    with open(json_filename, 'r') as json_file:
         json = jsonlib.load(json_file)
     json = json[json_root]
 except KeyError as e:
     say(f"ERROR could not find key {e} in '{json_filename}', aborting")
     sys.exit(2)
+except jsonlib.JSONDecodeError as e:
+    say(f"ERROR reading JSON")
+    with open(json_filename, 'r') as json_file:
+        for ln in range(0,3):
+            print(json_file.readline())
+    raise(e)
 except Exception as e:
     say(f"ERROR {e.__class__.__name__}: {e}, quitting")
     sys.exit(1)
@@ -27,12 +33,21 @@ except Exception as e:
 sarif_results = []
 sarif_rules = []
 
+level_map = {
+    '_default': 'warning',
+    'CRITICAL': 'error',
+    'HIGH': 'error',
+}
+
 for finding in json:
+    level = level_map.get(finding['spec']['level'].replace('FINDING_LEVEL_',''), level_map['_default'])
     rule_id = hashlib.sha256(finding['meta']['description'].encode('utf8')).hexdigest()
     sarif_finding = {
         "ruleId": rule_id,
-        "level": finding['spec']['level'].replace('FINDING_LEVEL_',''),
-        "message": finding['meta']['description'],
+        "level": level if level in ['note','warning','error'] else 'none',
+        "message": {
+            "text": finding['meta']['description'],
+        },
         "locations": []
     }
     
@@ -49,7 +64,7 @@ for finding in json:
             "text": finding['spec']['summary']
         },
         "properties": {
-            "security-severity": finding['spec'].get('finding_metadata',{}).get('vulnerability',{}).get('spec',{}).get('cvss_v3_severity',{}).get('score', 0),
+            "security-severity": str(finding['spec'].get('finding_metadata',{}).get('vulnerability',{}).get('spec',{}).get('cvss_v3_severity',{}).get('score', 0)),
             "tags": [ x.replace('FINDING_TAGS_','') for x in finding['spec'].get('finding_tags',[]) ]
         }
     }

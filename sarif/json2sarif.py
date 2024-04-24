@@ -64,7 +64,7 @@ for finding in json:
             "text": finding['spec']['summary']
         },
         "properties": {
-            "security-severity": finding['spec'].get('finding_metadata',{}).get('vulnerability',{}).get('spec',{}).get('cvss_v3_severity',{}).get('score', 0),
+            "security-severity": str(finding['spec'].get('finding_metadata',{}).get('vulnerability',{}).get('spec',{}).get('cvss_v3_severity',{}).get('score', 0)),
             "tags": [ x.replace('FINDING_TAGS_','') for x in finding['spec'].get('finding_tags',[]) ]
         }
     }

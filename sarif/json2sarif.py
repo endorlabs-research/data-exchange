@@ -36,7 +36,7 @@ sarif_rules = []
 level_map = {
     '_default': 'warning',
     'CRITICAL': 'error',
-    'HIGH': 'error,
+    'HIGH': 'error',
 }
 
 for finding in json:

@@ -33,11 +33,18 @@ except Exception as e:
 sarif_results = []
 sarif_rules = []
 
+level_map = {
+    '_default': 'warning',
+    'CRITICAL': 'error',
+    'HIGH': 'error,
+}
+
 for finding in json:
+    level = level_map.get(finding['spec']['level'].replace('FINDING_LEVEL_',''), level_map['_default'])
     rule_id = hashlib.sha256(finding['meta']['description'].encode('utf8')).hexdigest()
     sarif_finding = {
         "ruleId": rule_id,
-        "level": finding['spec']['level'].replace('FINDING_LEVEL_',''),
+        "level": level if level in ['note','warning','error'] else 'none',
         "message": finding['meta']['description'],
         "locations": []
     }

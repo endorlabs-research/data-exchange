@@ -18,7 +18,7 @@ Reads a file generated from output from an `endorctl scan` command (or scan oper
 
 The second argument is optional, and defaults to `all_findings` -- this is the finding category of the top-level structure for the findings output. This lets you, for example, only produce SARIF for issues that have violated a warn or block policy.
 
-There's an example of a [GitHub Workflow YAML file](example/endorlabs_warnings_sarif.yaml) that shows how to use this in lieu of the native SARIF support in Endor Labs.
+There's an example of a [GitHub Workflow YAML file](example/endorlabs_warnings_sarif.yml) that shows how to use this in lieu of the native SARIF support in Endor Labs.
 
 ## Resources
 

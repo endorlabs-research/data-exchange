@@ -1,0 +1,70 @@
+# This is a basic workflow to help you get started with Actions
+
+name: Endor Labs Quick Scan with custom SARIF filter
+### README ####
+## This is an example GitHub Actions workflow that uses the JSON findings output
+## from the Endor LAbs GitHub Action to generate a customized SARIF file
+##
+## Endor Labs natively supports SARIF output, but this is an example of producing
+## it yourself so that you can customize the contents, decide what goes into the
+## SARIF output, etc.
+##
+## This example assumes you've set up GitHub Actions OIDC auth connetion to your
+## Endor Labs tenant and set a repository or org variable named ENDOR_NAMESPACE
+## so that it contains your tenant name
+
+# Controls when the workflow will run
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  build:
+    permissions: 
+      issues: write            # required for SARIF upload (also requires public repo or GHAS subscription)
+      pull-requests: write     # required for PR comments
+      security-events: write   # required for SARIF upload
+      contents: read           # required to access repository data from this action
+      id-token: write          # required for OIDC auth to Endor Labs
+      actions: read            
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v4
+
+      - name: Download SARIF converter
+        run: |
+          curl -o json2sarif.py https://raw.githubusercontent.com/endorlabs-research/data-exchange/main/sarif/json2sarif.py
+
+      - name: Endor Labs Action
+        # the below SHA isn't merged to main as of 2024-04-24, but the set-output branch may disappear
+        uses: endorlabs/github-action@v1
+        id: endorctl
+        with:
+          namespace: ${{ vars.ENDOR_NAMESPACE }}
+          pr: false
+          additional_args: --quick-scan
+          output_file: endorlabs-results.json
+
+      - name: post-process SARIF
+        shell: bash
+        id: sarif
+        env:
+          ENDORCTL_OUTPUT: ${{ steps.endorctl.outputs.results }}
+        run: |
+          SARIF_OUTPUT="${ENDORCTL_OUTPUT}.sarif"
+          echo "Processing $ENDORCTL_OUTPUT into $SARIF_OUTPUT"
+          echo "filename=$SARIF_OUTPUT" >> "$GITHUB_OUTPUT"
+          python3 json2sarif.py "$ENDORCTL_OUTPUT" warning_findings > "$SARIF_OUTPUT"
+          echo "::group::SARIF file $SARIF_OUTPUT"
+          cat "$SARIF_OUTPUT"
+          echo "::endgroup::"
+      
+      - name: Upload SARIF to github
+        if: ${{ success() }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.sarif.outputs.filename }}

@@ -55,7 +55,7 @@ for finding in json:
         "id": rule_id,
         "name": finding['meta']['description'],
         "fullDescription": {
-            "text": f"{finding['spec']['explanation']"
+            "text": finding['spec']['explanation']
         },
         "help": {
             "text": f"{finding['spec']['remediation']}\n\n[see finding {finding['uuid'][-7:]}](https://app.endorlabs.com/t/{finding['tenant_meta']['namespace']}/findings/{finding['uuid']})"

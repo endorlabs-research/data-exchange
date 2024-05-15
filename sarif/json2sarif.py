@@ -55,10 +55,10 @@ for finding in json:
         "id": rule_id,
         "name": finding['meta']['description'],
         "fullDescription": {
-            "text": f"{finding['spec']['explanation']}\n\n[Finding {finding['uuid'][-7:]}](https://app.endorlabs.com/t/{finding['tenant_meta']['namespace']}/findings/{finding['uuid']})"
+            "text": f"{finding['spec']['explanation']"
         },
         "help": {
-            "text": finding['spec']['remediation']
+            "text": f"{finding['spec']['remediation']}\n\n[see finding {finding['uuid'][-7:]}](https://app.endorlabs.com/t/{finding['tenant_meta']['namespace']}/findings/{finding['uuid']})"
         },
         "shortDescription": {
             "text": finding['spec']['summary']

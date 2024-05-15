@@ -3,7 +3,7 @@
 name: Endor Labs Quick Scan with custom SARIF filter
 ### README ####
 ## This is an example GitHub Actions workflow that uses the JSON findings output
-## from the Endor LAbs GitHub Action to generate a customized SARIF file
+## from the Endor Labs GitHub Action to generate a customized SARIF file
 ##
 ## Endor Labs natively supports SARIF output, but this is an example of producing
 ## it yourself so that you can customize the contents, decide what goes into the
@@ -39,17 +39,16 @@ jobs:
         run: |
           curl -o json2sarif.py https://raw.githubusercontent.com/endorlabs-research/data-exchange/main/sarif/json2sarif.py
 
-      - name: Endor Labs Action
-        # the below SHA isn't merged to main as of 2024-04-24, but the set-output branch may disappear
+      - name: Endor Labs Scan Action
         uses: endorlabs/github-action@v1
         id: endorctl
         with:
-          namespace: ${{ vars.ENDOR_NAMESPACE }}
-          pr: false
-          additional_args: --quick-scan
-          output_file: endorlabs-results.json
+          namespace: ${{ vars.ENDOR_NAMESPACE }}  # set in your repo or org variables
+          pr: false                               # run a monitored scan, not a check-only scan
+          additional_args: --quick-scan           # for this example, skip Reachability Analysis
+          output_file: endorlabs-results.json     # save the findings (which are in JSON format) to a file
 
-      - name: post-process SARIF
+      - name: post-process results to generate SARIF
         shell: bash
         id: sarif
         env:
@@ -64,7 +63,7 @@ jobs:
           echo "::endgroup::"
       
       - name: Upload SARIF to github
-        if: ${{ success() }}
+        if: ${{ success() }}   # only run if SARIF generation was successful and had contents
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ steps.sarif.outputs.filename }}

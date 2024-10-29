@@ -8,7 +8,9 @@ SARIF is used to exchange logs of security scanner events (e.g. detections), and
 
 a simple, minimal converter for Endor Labs findings in our native JSON format, to SARIF that can be imported by GHAS and ADO. This is provided as an example of the simplicity of post-processing Endor Labs findings JSON data
 
-**NOTE:** Endor Labs has native SARIF support through the `--sarif-file` flag for `endorctl` and `with: sarif_file:` stanza in the GitHub Action.
+> **NOTE:** Endor Labs has native SARIF support through the `--sarif-file` flag for `endorctl` and `with: sarif_file:` stanza in the GitHub Action.
+
+**Run with**:
 
 ```sh
 python3 json2sarif.py path/to/findings.json [all_findings|warning_findings|blocking_findings] > path/to/sarif_file.sarif
